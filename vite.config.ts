@@ -28,7 +28,7 @@ export default defineConfig({
       cssFileName: "style",
     },
     rollupOptions: {
-      external: ["vue", /^@lucide\/vue/, "clsx", "tailwind-merge"],
+      external: ["vue", "clsx", "tailwind-merge"],
     },
   },
 });
