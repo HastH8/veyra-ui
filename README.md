@@ -12,6 +12,17 @@ pnpm add @vezironi/veyra-ui
 
 Requires `vue` **3.5 or newer** as a peer dependency.
 
+### From GitHub Packages
+
+The package is also published to GitHub Packages. Point the `@vezironi` scope at the GitHub registry in your project's `.npmrc`:
+
+```ini
+@vezironi:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+`GITHUB_TOKEN` must be a personal access token (classic) with the `read:packages` scope; GitHub Packages requires authentication even for public packages. Then install as usual.
+
 ## Usage
 
 Import the stylesheet once, in your app entry (for example `main.ts`):

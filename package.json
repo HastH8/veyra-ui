@@ -4,6 +4,14 @@
   "description": "Vue 3 UI component kit built with Tailwind CSS v4, with dark and light themes.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vezironi/veyra-ui.git"
+  },
+  "homepage": "https://github.com/vezironi/veyra-ui#readme",
+  "bugs": {
+    "url": "https://github.com/vezironi/veyra-ui/issues"
+  },
   "keywords": [
     "vue",
     "vue3",
