@@ -12,6 +12,7 @@
 			size?: "sm" | "md" | "lg";
 			indeterminate?: boolean;
 			striped?: boolean;
+			transitionDuration?: number;
 			class?: HTMLAttributes["class"];
 		}>(),
 		{
@@ -21,6 +22,7 @@
 			size: "md",
 			indeterminate: false,
 			striped: false,
+			transitionDuration: 300,
 		},
 	);
 
@@ -64,7 +66,7 @@
 		>
 			<div
 				:class="[
-					'h-full rounded-full transition-[width] duration-300',
+					'h-full rounded-full transition-[width]',
 					indeterminate
 						? 'w-2/5 animate-[progress-indeterminate_1.4s_ease-in-out_infinite]'
 						: '',
@@ -74,6 +76,7 @@
 				]"
 				:style="{
 					width: indeterminate ? undefined : `${percent}%`,
+					transitionDuration: `${Math.max(0, transitionDuration)}ms`,
 					backgroundColor: color || 'var(--color-inverse)',
 					backgroundImage:
 						striped && !indeterminate
