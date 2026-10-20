@@ -34,8 +34,9 @@ const model = defineModel<boolean>({ default: false });
             @click="model = !model"
         >
             <span
-                class="size-3.5 rounded-full transition-transform"
-                :class="model ? 'translate-x-[18px] bg-bg-base' : 'translate-x-0.5 bg-text-faint'"
+                class="absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full transition-[left]"
+                :class="model ? 'bg-bg-base' : 'bg-text-faint'"
+                :style="{ left: model ? 'calc(100% - 1rem)' : '0.125rem' }"
             />
         </button>
 

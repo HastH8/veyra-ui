@@ -1,2 +1,5 @@
-import './style.css';
-export { default as Button } from "./components/Button.vue";
+import { createApp } from "vue";
+import App from "./App.vue";
+import "./style.css";
+
+createApp(App).mount("#app");
