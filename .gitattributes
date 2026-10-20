@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Executable bin scripts need LF so the shebang works on macOS/Linux,
+# even when the package is packed/published from Windows.
+mcp/*.js text eol=lf

@@ -103,8 +103,12 @@
 					type="button"
 					role="menuitem"
 					:disabled="item.disabled"
-					class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-text-muted hover:bg-bg-muted hover:text-text-primary focus-visible:bg-bg-muted focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
-					:class="{ 'text-danger hover:text-danger/80': item.destructive }"
+					class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-bg-muted focus-visible:bg-bg-muted focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
+					:class="
+						item.destructive
+							? 'text-danger hover:text-danger/80'
+							: 'text-text-muted hover:text-text-primary'
+					"
 					@click="choose(item.value)"
 				>
 					<component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
