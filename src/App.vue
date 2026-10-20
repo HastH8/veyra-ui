@@ -186,6 +186,14 @@ const menuItems = [
                         <Button size="sm">Small</Button><Button>Save changes</Button>
                         <Button variant="secondary" size="lg">Cancel</Button>
                     </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Button variant="solid">Solid</Button>
+                        <Button variant="outline">Outline</Button>
+                        <Button variant="danger">Delete</Button>
+                        <Button variant="success">Approve</Button>
+                        <Button variant="warning">Warning</Button>
+                        <Button variant="danger" disabled>Disabled</Button>
+                    </div>
                 </section>
 
                 <section class="mb-4 flex w-full break-inside-avoid flex-col gap-y-3 rounded-xl border border-border bg-bg-surface p-4">
@@ -223,6 +231,7 @@ const menuItems = [
                 <section class="mb-4 flex w-full break-inside-avoid flex-col gap-y-3 rounded-xl border border-border bg-bg-surface p-4">
                     <h2 class="text-sm font-semibold text-text-primary">ColorPicker</h2>
                     <ColorPicker v-model="accent" label="Accent color" :presets="['#8b5cf6', '#06b6d4', '#f97316', '#22c55e', '#ef4444']" />
+                    <ColorPicker v-model="accent" label="Accent color (simple)" :detailed="false" />
                     <p class="mt-3 text-xs text-text-muted">Linked preview</p>
                     <Progress :value="progress" :color="accent" size="lg" />
                 </section>

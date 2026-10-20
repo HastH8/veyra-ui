@@ -28,8 +28,8 @@ const emit = defineEmits<{
 
 const variants = {
     default: { color: undefined, icon: Info },
-    success: { color: "#22c55e", icon: CircleCheck },
-    danger: { color: "#f43f5e", icon: CircleAlert },
+    success: { color: "var(--color-success)", icon: CircleCheck },
+    danger: { color: "var(--color-danger)", icon: CircleAlert },
 };
 
 const activeColor = computed(() =>

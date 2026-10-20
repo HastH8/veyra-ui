@@ -61,7 +61,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 <template>
     <span
         ref="triggerRef"
-        class="inline-flex"
+        class="inline-flex w-fit max-w-full"
         @mouseenter="show"
         @mouseleave="hide"
         @focusin="show"

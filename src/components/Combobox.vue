@@ -1,10 +1,12 @@
 <script setup lang="ts">
 	import {
 		computed,
+		nextTick,
 		onBeforeUnmount,
 		onMounted,
 		ref,
 		useId,
+		watch,
 		type HTMLAttributes,
 	} from "vue";
 	import { Check, ChevronDown, Search } from "@lucide/vue";
@@ -36,6 +38,9 @@
 	const model = defineModel<string>({ default: "" });
 	const id = useId();
 	const root = ref<HTMLElement | null>(null);
+	const trigger = ref<HTMLElement | null>(null);
+	const panel = ref<HTMLElement | null>(null);
+	const panelStyle = ref<Record<string, string>>({});
 	const searchInput = ref<HTMLInputElement | null>(null);
 	const open = ref(false);
 	const query = ref("");
@@ -101,13 +106,46 @@
 			if (option) select(option);
 		}
 	}
-	function handleOutside(event: PointerEvent) {
-		if (!root.value?.contains(event.target as Node)) open.value = false;
+	function updatePanelPosition() {
+		if (!trigger.value || !panel.value) return;
+		const rect = trigger.value.getBoundingClientRect();
+		const gap = 4;
+		const viewportPadding = 8;
+		const height = panel.value.offsetHeight;
+		const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+		const spaceAbove = rect.top - gap - viewportPadding;
+		const placeAbove = spaceBelow < height && spaceAbove > spaceBelow;
+		const top = placeAbove ? rect.top - height - gap : rect.bottom + gap;
+		panelStyle.value = {
+			left: `${rect.left}px`,
+			width: `${rect.width}px`,
+			top: `${Math.max(viewportPadding, Math.min(top, window.innerHeight - height - viewportPadding))}px`,
+		};
 	}
-	onMounted(() => document.addEventListener("pointerdown", handleOutside));
-	onBeforeUnmount(() =>
-		document.removeEventListener("pointerdown", handleOutside),
-	);
+	function handlePositionChange() {
+		if (open.value) updatePanelPosition();
+	}
+	function handleOutside(event: PointerEvent) {
+		const target = event.target as Node;
+		if (!root.value?.contains(target) && !panel.value?.contains(target))
+			open.value = false;
+	}
+	// The list height changes while filtering, so re-anchor after each render
+	watch([open, filtered], async () => {
+		if (!open.value) return;
+		await nextTick();
+		updatePanelPosition();
+	});
+	onMounted(() => {
+		document.addEventListener("pointerdown", handleOutside);
+		window.addEventListener("resize", handlePositionChange);
+		window.addEventListener("scroll", handlePositionChange, true);
+	});
+	onBeforeUnmount(() => {
+		document.removeEventListener("pointerdown", handleOutside);
+		window.removeEventListener("resize", handlePositionChange);
+		window.removeEventListener("scroll", handlePositionChange, true);
+	});
 </script>
 
 <template>
@@ -120,6 +158,7 @@
 			label
 		}}</label>
 		<button
+			ref="trigger"
 			type="button"
 			role="combobox"
 			:aria-expanded="open"
@@ -136,59 +175,64 @@
 				:class="{ 'rotate-180': open }"
 			/>
 		</button>
-		<div
-			v-if="open"
-			:id="id"
-			role="listbox"
-			class="z-40 mt-1 rounded-lg border border-border bg-bg-base p-1.5 shadow-xl"
-		>
-			<div class="flex items-center gap-2 border-b border-border px-2 pb-2">
-				<Search class="size-4 text-text-faint" />
-				<input
-					ref="searchInput"
-					v-model="query"
-					type="text"
-					aria-label="Search options"
-					placeholder="Search..."
-					class="h-8 min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-faint"
-					@input="activeIndex = 0"
-				/>
-			</div>
-			<div class="mt-1 max-h-52 overflow-y-auto">
-				<p
-					v-if="!filtered.length"
-					class="px-2.5 py-5 text-center text-sm text-text-faint"
-				>
-					{{ emptyText }}
-				</p>
-				<button
-					v-for="(option, index) in filtered"
-					:key="option.value"
-					type="button"
-					role="option"
-					:aria-selected="option.value === model"
-					:disabled="option.disabled"
-					class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-bg-muted disabled:opacity-40"
-					:class="{ 'bg-bg-muted': index === activeIndex }"
-					@mouseenter="activeIndex = index"
-					@click="select(option)"
-				>
-					<span class="min-w-0 flex-1"
-						><span class="block truncate text-sm text-text-primary">{{
-							option.label
-						}}</span
-						><span
-							v-if="option.description"
-							class="block truncate text-xs text-text-faint"
-							>{{ option.description }}</span
-						></span
-					>
-					<Check
-						v-if="option.value === model"
-						class="size-4 text-text-primary"
+		<Teleport to="body">
+			<div
+				v-if="open"
+				:id="id"
+				ref="panel"
+				role="listbox"
+				class="fixed z-[9999] rounded-lg border border-border bg-bg-base p-1.5 shadow-xl"
+				:style="panelStyle"
+				@keydown="handleKeydown"
+			>
+				<div class="flex items-center gap-2 border-b border-border px-2 pb-2">
+					<Search class="size-4 text-text-faint" />
+					<input
+						ref="searchInput"
+						v-model="query"
+						type="text"
+						aria-label="Search options"
+						placeholder="Search..."
+						class="h-8 min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-faint"
+						@input="activeIndex = 0"
 					/>
-				</button>
+				</div>
+				<div class="mt-1 max-h-52 overflow-y-auto">
+					<p
+						v-if="!filtered.length"
+						class="px-2.5 py-5 text-center text-sm text-text-faint"
+					>
+						{{ emptyText }}
+					</p>
+					<button
+						v-for="(option, index) in filtered"
+						:key="option.value"
+						type="button"
+						role="option"
+						:aria-selected="option.value === model"
+						:disabled="option.disabled"
+						class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-bg-muted disabled:opacity-40"
+						:class="{ 'bg-bg-muted': index === activeIndex }"
+						@mouseenter="activeIndex = index"
+						@click="select(option)"
+					>
+						<span class="min-w-0 flex-1"
+							><span class="block truncate text-sm text-text-primary">{{
+								option.label
+							}}</span
+							><span
+								v-if="option.description"
+								class="block truncate text-xs text-text-faint"
+								>{{ option.description }}</span
+							></span
+						>
+						<Check
+							v-if="option.value === model"
+							class="size-4 text-text-primary"
+						/>
+					</button>
+				</div>
 			</div>
-		</div>
+		</Teleport>
 	</div>
 </template>

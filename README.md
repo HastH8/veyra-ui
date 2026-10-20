@@ -169,7 +169,7 @@ Colors are defined as CSS variables. Override them to customize the theme:
 }
 ```
 
-Tokens: `--color-bg-base`, `--color-bg-surface`, `--color-bg-muted`, `--color-bg-muted-hover`, `--color-bg-muted-active`, `--color-bg-elevated`, `--color-border`, `--color-text-primary`, `--color-text-muted`, `--color-text-faint`, `--color-ring`, `--color-inverse`, `--color-text-inverse`.
+Tokens: `--color-bg-base`, `--color-bg-surface`, `--color-bg-muted`, `--color-bg-muted-hover`, `--color-bg-muted-active`, `--color-bg-elevated`, `--color-border`, `--color-text-primary`, `--color-text-muted`, `--color-text-faint`, `--color-ring`, `--color-inverse`, `--color-text-inverse`, `--color-bg-inset`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`.
 
 ## Notes on the stylesheet
 

@@ -2,6 +2,7 @@
 	import { computed, watch, type HTMLAttributes } from "vue";
 	import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown } from "@lucide/vue";
 	import { cn } from "../utils/cn";
+	import Checkbox from "./Checkbox.vue";
 	import Skeleton from "./Skeleton.vue";
 
 	export interface DataTableColumn {
@@ -91,14 +92,14 @@
 	function rowId(row: DataTableRow) {
 		return row[props.rowKey] as string | number;
 	}
-	function toggleAll(event: Event) {
+	function toggleAll(checked: boolean) {
 		const visibleIds = visibleRows.value.map(rowId);
-		selected.value = (event.target as HTMLInputElement).checked
+		selected.value = checked
 			? [...new Set([...selected.value, ...visibleIds])]
 			: selected.value.filter((id) => !visibleIds.includes(id));
 	}
-	function toggleRow(id: string | number, event: Event) {
-		selected.value = (event.target as HTMLInputElement).checked
+	function toggleRow(id: string | number, checked: boolean) {
+		selected.value = checked
 			? [...selected.value, id]
 			: selected.value.filter((value) => value !== id);
 	}
@@ -128,11 +129,12 @@
 				<thead class="bg-bg-muted/60 text-xs text-text-muted">
 					<tr>
 						<th v-if="selectable" class="w-10 px-3 py-3">
-							<input
-								type="checkbox"
+							<Checkbox
 								aria-label="Select all rows"
-								:checked="allSelected"
-								@change="toggleAll"
+								:model-value="allSelected"
+								:disabled="!visibleRows.length"
+								class="relative align-middle"
+								@update:model-value="toggleAll"
 							/>
 						</th>
 						<th
@@ -185,11 +187,11 @@
 						class="text-text-primary transition-colors hover:bg-bg-muted/40"
 					>
 						<td v-if="selectable" class="px-3 py-3">
-							<input
-								type="checkbox"
+							<Checkbox
 								:aria-label="`Select row ${index + 1}`"
-								:checked="selected.includes(rowId(row))"
-								@change="toggleRow(rowId(row), $event)"
+								:model-value="selected.includes(rowId(row))"
+								class="relative align-middle"
+								@update:model-value="toggleRow(rowId(row), $event)"
 							/>
 						</td>
 						<td

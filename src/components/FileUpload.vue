@@ -167,7 +167,7 @@
 		/>
 		<ul
 			v-if="errors.length"
-			class="mt-2 space-y-1 text-xs text-red-400"
+			class="mt-2 space-y-1 text-xs text-danger"
 			role="alert"
 		>
 			<li v-for="error in errors" :key="error">{{ error }}</li>

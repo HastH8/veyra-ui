@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
             :placeholder="placeholder"
             :name="name"
             :disabled="disabled"
-            :class="[{ [sizes[size].input]: showPicker, 'border-red-500/50': invalid }]"
+            :class="[{ [sizes[size].input]: showPicker, 'border-danger/50': invalid }]"
         />
 
         <button

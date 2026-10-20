@@ -18,9 +18,9 @@
 	const emit = defineEmits<{ close: [] }>();
 	const timer = ref<ReturnType<typeof setTimeout>>();
 	const variants = {
-		default: { icon: Info, color: "text-sky-400" },
-		success: { icon: CircleCheck, color: "text-emerald-400" },
-		danger: { icon: CircleAlert, color: "text-red-400" },
+		default: { icon: Info, color: "text-info" },
+		success: { icon: CircleCheck, color: "text-success" },
+		danger: { icon: CircleAlert, color: "text-danger" },
 	};
 	function close() {
 		open.value = false;

@@ -28,9 +28,9 @@
     };
 
     const badgeVariants = {
-        active: "bg-emerald-500",
+        active: "bg-success",
         inactive: "bg-zinc-500",
-        busy: "bg-red-500",
+        busy: "bg-danger",
     };
 </script>
 

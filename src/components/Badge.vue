@@ -18,9 +18,9 @@ const props = withDefaults(
 const variants = {
     default: "border-border bg-bg-muted text-text-primary",
     outline: "border-border text-text-muted",
-    success: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
-    muted: "border-zinc-500/20 bg-zinc-500/10 text-zinc-400",
-    danger: "border-red-500/20 bg-red-500/10 text-red-400",
+    success: "border-success/25 bg-success/10 text-success",
+    muted: "border-border bg-bg-muted text-text-muted",
+    danger: "border-danger/25 bg-danger/10 text-danger",
 };
 </script>
 

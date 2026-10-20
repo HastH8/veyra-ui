@@ -7,6 +7,7 @@ const props = withDefaults(
     defineProps<{
         label?: string;
         name?: string;
+        ariaLabel?: string;
         disabled?: boolean;
         class?: HTMLAttributes["class"];
     }>(),
@@ -30,6 +31,7 @@ const model = defineModel<boolean>({ default: false });
             v-model="model"
             type="checkbox"
             :name="name"
+            :aria-label="ariaLabel"
             :disabled="disabled"
             class="peer sr-only"
         />

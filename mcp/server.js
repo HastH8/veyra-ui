@@ -18,7 +18,7 @@ const descriptions = {
 	Avatar: "User or character avatar with fallback initials and status indicator.",
 	Badge: "Compact status, category, or count label.",
 	Breadcrumbs: "Navigation trail with collapsed middle items.",
-	Button: "Theme-aware action button with primary and secondary variants.",
+	Button: "Theme-aware action button with primary, secondary, solid, outline, danger, success, and warning variants.",
 	Calendar: "Month calendar for selecting a date.",
 	Card: "Surface container with optional header, content, and footer slots.",
 	Checkbox: "Accessible boolean checkbox with label and description support.",

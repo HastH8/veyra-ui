@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import {
 		computed,
+		nextTick,
 		onBeforeUnmount,
 		onMounted,
 		ref,
@@ -14,17 +15,23 @@
 		defineProps<{
 			label?: string;
 			disabled?: boolean;
+			// false shows only the color area, hue, opacity and the hex input
+			detailed?: boolean;
 			presets?: string[];
 			class?: HTMLAttributes["class"];
 		}>(),
 		{
 			disabled: false,
+			detailed: true,
 			presets: () => [],
 		},
 	);
 
 	const model = defineModel<string>({ default: "#6366f1" });
 	const rootRef = ref<HTMLElement | null>(null);
+	const triggerRef = ref<HTMLElement | null>(null);
+	const panelRef = ref<HTMLElement | null>(null);
+	const panelStyle = ref<Record<string, string>>({});
 	const open = ref(false);
 	const hexInput = ref(model.value);
 	const format = ref<"hex" | "rgb" | "hsl">("hex");
@@ -233,14 +240,58 @@
 		void navigator.clipboard?.writeText(formattedColor.value);
 	}
 
-	function handleOutsideClick(event: PointerEvent) {
-		if (!rootRef.value?.contains(event.target as Node)) open.value = false;
+	function updatePanelPosition() {
+		const trigger = triggerRef.value;
+		const panel = panelRef.value;
+
+		if (!trigger || !panel) return;
+
+		const rect = trigger.getBoundingClientRect();
+		const gap = 8;
+		const viewportPadding = 8;
+		const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+		const spaceAbove = rect.top - gap - viewportPadding;
+		const placeAbove =
+			spaceBelow < panel.offsetHeight && spaceAbove > spaceBelow;
+		const top = placeAbove
+			? rect.top - panel.offsetHeight - gap
+			: rect.bottom + gap;
+
+		panelStyle.value = {
+			left: `${Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - panel.offsetWidth - viewportPadding))}px`,
+			top: `${Math.max(viewportPadding, Math.min(top, window.innerHeight - panel.offsetHeight - viewportPadding))}px`,
+			maxHeight: `${window.innerHeight - viewportPadding * 2}px`,
+		};
 	}
 
-	onMounted(() => document.addEventListener("pointerdown", handleOutsideClick));
-	onBeforeUnmount(() =>
-		document.removeEventListener("pointerdown", handleOutsideClick),
-	);
+	function handleOutsideClick(event: PointerEvent) {
+		const target = event.target as Node;
+
+		if (!rootRef.value?.contains(target) && !panelRef.value?.contains(target))
+			open.value = false;
+	}
+
+	function handlePositionChange() {
+		if (open.value) updatePanelPosition();
+	}
+
+	watch(open, async (isOpen) => {
+		if (!isOpen) return;
+
+		await nextTick();
+		updatePanelPosition();
+	});
+
+	onMounted(() => {
+		document.addEventListener("pointerdown", handleOutsideClick);
+		window.addEventListener("resize", handlePositionChange);
+		window.addEventListener("scroll", handlePositionChange, true);
+	});
+	onBeforeUnmount(() => {
+		document.removeEventListener("pointerdown", handleOutsideClick);
+		window.removeEventListener("resize", handlePositionChange);
+		window.removeEventListener("scroll", handlePositionChange, true);
+	});
 </script>
 
 <template>
@@ -254,6 +305,7 @@
 		}}</label>
 
 		<button
+			ref="triggerRef"
 			type="button"
 			:disabled="disabled"
 			:aria-expanded="open"
@@ -279,157 +331,164 @@
 			/>
 		</button>
 
-		<div
-			v-if="open"
-			role="dialog"
-			:aria-label="label ? `${label} picker` : 'Color picker'"
-			class="mt-2 w-full max-w-72 rounded-xl border border-border bg-bg-base p-3 shadow-xl"
-		>
-			<div class="mb-3 flex items-center justify-between">
-				<div>
-					<p class="text-sm font-semibold text-text-primary">Choose a color</p>
-					<p class="mt-0.5 text-xs text-text-faint">
-						Pick a shade or enter a hex value
-					</p>
-				</div>
-				<button
-					type="button"
-					aria-label="Close color picker"
-					class="flex size-7 items-center justify-center rounded-md text-text-faint hover:bg-bg-muted hover:text-text-primary focus-visible:outline-2 focus-visible:outline-ring"
-					@click="open = false"
-				>
-					<X class="size-4" />
-				</button>
-			</div>
-
+		<Teleport to="body">
 			<div
-				role="slider"
-				aria-label="Color saturation and brightness"
-				aria-valuemin="0"
-				aria-valuemax="100"
-				:aria-valuenow="Math.round(color.saturation * 100)"
-				tabindex="0"
-				:style="planeStyle"
-				class="relative h-28 touch-none cursor-crosshair overflow-hidden rounded-md border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-				@pointerdown="startPlaneSelection"
-				@pointermove="(event) => event.buttons && updatePlane(event)"
-				@keydown="handlePlaneKeys"
+				v-if="open"
+				ref="panelRef"
+				role="dialog"
+				:aria-label="label ? `${label} picker` : 'Color picker'"
+				class="fixed z-[9999] w-72 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-border bg-bg-base p-3 shadow-xl"
+				:style="panelStyle"
+				@keydown.esc="open = false"
 			>
-				<div
-					class="absolute inset-0 bg-linear-to-r from-white to-transparent"
-				/>
-				<div
-					class="absolute inset-0 bg-linear-to-t from-black to-transparent"
-				/>
-				<span
-					class="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_#0009]"
-					:style="thumbStyle"
-				/>
-			</div>
-
-			<label
-				class="mt-3 block text-xs font-medium text-text-muted"
-				for="color-picker-hue"
-				>Hue</label
-			>
-			<input
-				id="color-picker-hue"
-				v-model.number="hue"
-				aria-label="Hue"
-				type="range"
-				min="0"
-				max="359"
-				class="hue-slider mt-2 h-3 w-full cursor-pointer appearance-none rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-			/>
-
-			<label
-				class="mt-3 block text-xs font-medium text-text-muted"
-				for="color-picker-opacity"
-				>Opacity
-				<span class="text-text-faint">{{ Math.round(opacity) }}%</span></label
-			>
-			<input
-				id="color-picker-opacity"
-				v-model.number="opacity"
-				aria-label="Opacity"
-				type="range"
-				min="0"
-				max="100"
-				class="mt-1 h-1.5 w-full cursor-pointer accent-inverse"
-			/>
-
-			<div class="mb-1 mt-3 flex items-center justify-between">
-				<p class="text-xs font-medium text-text-muted">Color value</p>
-				<div
-					class="flex items-center gap-0.5 rounded-md border border-border bg-bg-surface p-0.5"
-					role="group"
-					aria-label="Color format"
-				>
+				<div v-if="detailed" class="mb-3 flex items-center justify-between">
+					<div>
+						<p class="text-sm font-semibold text-text-primary">Choose a color</p>
+						<p class="mt-0.5 text-xs text-text-faint">
+							Pick a shade or enter a hex value
+						</p>
+					</div>
 					<button
-						v-for="option in ['hex', 'rgb', 'hsl'] as const"
-						:key="option"
 						type="button"
-						:aria-pressed="format === option"
-						class="rounded px-1.5 py-0.5 text-[9px] font-medium uppercase text-text-faint hover:text-text-primary"
-						:class="{ 'bg-bg-muted text-text-primary': format === option }"
-						@click="format = option"
+						aria-label="Close color picker"
+						class="flex size-7 items-center justify-center rounded-md text-text-faint hover:bg-bg-muted hover:text-text-primary focus-visible:outline-2 focus-visible:outline-ring"
+						@click="open = false"
 					>
-						{{ option }}
+						<X class="size-4" />
 					</button>
 				</div>
-			</div>
-			<div class="flex items-center gap-2">
-				<span
-					class="size-8 shrink-0 rounded-md border border-border"
-					:style="{ backgroundColor: model }"
-				/>
-				<label class="sr-only" for="color-picker-hex"
-					>Selected color value</label
-				>
-				<input
-					id="color-picker-hex"
-					:value="format === 'hex' ? hexInput : formattedColor"
-					type="text"
-					inputmode="text"
-					spellcheck="false"
-					maxlength="9"
-					:readonly="format !== 'hex'"
-					:aria-invalid="format === 'hex' ? !validHex : undefined"
-					class="h-8 min-w-0 flex-1 rounded-md border border-border bg-bg-surface px-2 font-mono text-[10px] uppercase text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-					@input="updateHex(($event.target as HTMLInputElement).value)"
-					@blur="!validHex && (hexInput = model)"
-					@keydown.enter="!validHex && (hexInput = model)"
-				/>
-				<button
-					type="button"
-					aria-label="Copy color"
-					class="flex h-8 items-center gap-1 rounded-md border border-border bg-bg-surface px-2 text-[11px] text-text-muted transition-colors hover:bg-bg-muted hover:text-text-primary"
-					@click="copyColor"
-				>
-					<Check class="size-3.5" /> Copy
-				</button>
-			</div>
 
-			<div v-if="presets.length" class="mt-3 border-t border-border pt-3">
-				<p class="mb-2 text-xs font-medium text-text-muted">Presets</p>
-				<div class="flex flex-wrap gap-1.5">
-					<button
-						v-for="preset in presets"
-						:key="preset"
-						type="button"
-						:aria-label="`Use ${preset}`"
-						:aria-pressed="model.toLowerCase() === preset.toLowerCase()"
-						class="size-6 cursor-pointer rounded-md border border-border transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-						:class="{
-							'ring-2 ring-ring ring-offset-2 ring-offset-bg-base':
-								model.toLowerCase() === preset.toLowerCase(),
-						}"
-						:style="{ backgroundColor: preset }"
-						@click="choosePreset(preset)"
+				<div
+					role="slider"
+					aria-label="Color saturation and brightness"
+					aria-valuemin="0"
+					aria-valuemax="100"
+					:aria-valuenow="Math.round(color.saturation * 100)"
+					tabindex="0"
+					:style="planeStyle"
+					class="relative h-28 touch-none cursor-crosshair overflow-hidden rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+					@pointerdown="startPlaneSelection"
+					@pointermove="(event) => event.buttons && updatePlane(event)"
+					@keydown="handlePlaneKeys"
+				>
+					<div
+						class="absolute inset-0 bg-linear-to-r from-white to-transparent"
+					/>
+					<div
+						class="absolute inset-0 bg-linear-to-t from-black to-transparent"
+					/>
+					<span
+						class="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_#0009]"
+						:style="thumbStyle"
 					/>
 				</div>
+
+				<label
+					class="mt-3 block text-xs font-medium text-text-muted"
+					for="color-picker-hue"
+					>Hue</label
+				>
+				<input
+					id="color-picker-hue"
+					v-model.number="hue"
+					aria-label="Hue"
+					type="range"
+					min="0"
+					max="359"
+					class="hue-slider mt-2 h-3 w-full cursor-pointer appearance-none rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+				/>
+
+				<label
+					class="mt-3 block text-xs font-medium text-text-muted"
+					for="color-picker-opacity"
+					>Opacity
+					<span class="text-text-faint">{{ Math.round(opacity) }}%</span></label
+				>
+				<input
+					id="color-picker-opacity"
+					v-model.number="opacity"
+					aria-label="Opacity"
+					type="range"
+					min="0"
+					max="100"
+					class="mt-1 h-1.5 w-full cursor-pointer accent-inverse"
+				/>
+
+				<div class="mb-1 mt-3 flex items-center justify-between">
+					<p class="text-xs font-medium text-text-muted">Color value</p>
+					<div
+						v-if="detailed"
+						class="flex items-center gap-0.5 rounded-md border border-border bg-bg-surface p-0.5"
+						role="group"
+						aria-label="Color format"
+					>
+						<button
+							v-for="option in ['hex', 'rgb', 'hsl'] as const"
+							:key="option"
+							type="button"
+							:aria-pressed="format === option"
+							class="rounded px-1.5 py-0.5 text-[9px] font-medium uppercase text-text-faint hover:text-text-primary"
+							:class="{ 'bg-bg-muted text-text-primary': format === option }"
+							@click="format = option"
+						>
+							{{ option }}
+						</button>
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					<span
+						class="size-8 shrink-0 rounded-md border border-border"
+						:style="{ backgroundColor: model }"
+					/>
+					<label class="sr-only" for="color-picker-hex"
+						>Selected color value</label
+					>
+					<input
+						id="color-picker-hex"
+						:value="format === 'hex' ? hexInput : formattedColor"
+						type="text"
+						inputmode="text"
+						spellcheck="false"
+						maxlength="9"
+						:readonly="format !== 'hex'"
+						:aria-invalid="format === 'hex' ? !validHex : undefined"
+						class="h-8 min-w-0 flex-1 rounded-md border border-border bg-bg-surface px-2 font-mono text-[10px] uppercase text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+						@input="updateHex(($event.target as HTMLInputElement).value)"
+						@blur="!validHex && (hexInput = model)"
+						@keydown.enter="!validHex && (hexInput = model)"
+					/>
+					<button
+						v-if="detailed"
+						type="button"
+						aria-label="Copy color"
+						class="flex h-8 items-center gap-1 rounded-md border border-border bg-bg-surface px-2 text-[11px] text-text-muted transition-colors hover:bg-bg-muted hover:text-text-primary"
+						@click="copyColor"
+					>
+						<Check class="size-3.5" /> Copy
+					</button>
+				</div>
+
+				<div v-if="detailed && presets.length" class="mt-3 border-t border-border pt-3">
+					<p class="mb-2 text-xs font-medium text-text-muted">Presets</p>
+					<div class="flex flex-wrap gap-1.5">
+						<button
+							v-for="preset in presets"
+							:key="preset"
+							type="button"
+							:aria-label="`Use ${preset}`"
+							:aria-pressed="model.toLowerCase() === preset.toLowerCase()"
+							class="size-6 cursor-pointer rounded-md border border-border transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+							:class="{
+								'ring-2 ring-ring ring-offset-2 ring-offset-bg-base':
+									model.toLowerCase() === preset.toLowerCase(),
+							}"
+							:style="{ backgroundColor: preset }"
+							@click="choosePreset(preset)"
+						/>
+					</div>
+				</div>
 			</div>
-		</div>
+		</Teleport>
 	</div>
 </template>
 
